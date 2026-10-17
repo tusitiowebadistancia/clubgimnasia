@@ -43,7 +43,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="https://federicofigini.com"
+                href="https://tusitiowebadistancia.com"
                 target="_blank"
                 rel="noreferrer"
                 className="transition hover:text-white"

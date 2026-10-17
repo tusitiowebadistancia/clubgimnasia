@@ -8,7 +8,7 @@ const images = [
   "/images/carruselpool4.jpg",
   "/images/carruselpool5.jpg",
   "/images/carruselpool6.jpg",
-  "/images/carruselpool7.jpg",
+  "/images/123pool.png",
 ];
 
 export default function PoolGallery() {

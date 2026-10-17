@@ -4,9 +4,9 @@ import BowlingCarousel3D from "../../common/BowlingCarousel3D";
 
 const images = [
   "/images/carruselbow.jpeg",
-  "/images/carruselpool8.jpg",
-  "/images/carruselbow2.jpeg",
-  "/images/carruselbow3.jpeg",
+  "/images/bow1.png",
+  "/images/bow3.png",
+  "/images/bow4.png",
   "/images/carruselbow4.jpeg",
   "/images/carruselbow7.jpg",
 ];
