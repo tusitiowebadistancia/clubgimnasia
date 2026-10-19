@@ -135,7 +135,7 @@ export default function MobileVideoBanner() {
             >
               {activeVideo === index && isVisible && (
                 <svg
-                  key={`${activeVideo}-${activeDuration}-${Date.now()}`}
+                  key={`${activeVideo}-${activeDuration}`}
                   className="absolute inset-0 h-5 w-5 -rotate-90"
                   viewBox="0 0 36 36"
                 >

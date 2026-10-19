@@ -219,6 +219,7 @@ model SyncRun {
 
 model SyncLock {
   id          String   @id
+  ownerToken  String?
   lockedUntil DateTime
   updatedAt   DateTime @updatedAt
 }

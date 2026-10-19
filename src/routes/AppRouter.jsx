@@ -17,6 +17,10 @@ import ScrollToTop from "../components/common/ScrollToTop";
 // import AnotadorTruco from "../pages/AnotadorTruco";
 import MenuQR from "../pages/MenuQR";
 import ReglasBowling from "../pages/ReglasBowling";
+import AdminLogin from "../admin/AdminLogin";
+import AdminLayout from "../admin/AdminLayout";
+import AdminDashboard from "../admin/AdminDashboard";
+import AdminProducts from "../admin/AdminProducts";
 
 import MainLayout from "../components/layout/MainLayout";
 
@@ -35,6 +39,11 @@ export default function AppRouter() {
         {/* <Route path="/juegos" element={<Juegos />} /> */}
         <Route path="/menu" element={<Menu />} />
         <Route path="/menu-qr" element={<MenuQR />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="productos" element={<AdminProducts />} />
+        </Route>
 
         <Route
           path="/reglas-del-bowling"
