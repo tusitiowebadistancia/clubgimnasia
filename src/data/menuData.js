@@ -624,6 +624,13 @@ export const getTableFromSearch = () => {
   return mesa ? mesa : "";
 };
 
+export const getVenueQueryFromSearch = () => {
+  const params = new URLSearchParams(window.location.search);
+  const qr = params.get("qr");
+  const mesa = params.get("mesa");
+  return qr ? { qr } : mesa ? { mesa } : null;
+};
+
 export const buildMenuUrlForTable = (table) => {
   const tableNumber = String(table || "").trim();
 
@@ -632,7 +639,7 @@ export const buildMenuUrlForTable = (table) => {
   )}`;
 };
 
-export function buildWhatsAppMessage(table, cart) {
+export function buildWhatsAppMessage(venue, cart) {
   const lines = cart.map((item, index) => {
     const subtotal =
       typeof item.price === "number"
@@ -648,7 +655,7 @@ export function buildWhatsAppMessage(table, cart) {
   }, 0);
 
   return [
-    `*MESA ${table}*`,
+    `*${venue.label}*`,
     "",
     "*Pedido:*",
     ...lines,

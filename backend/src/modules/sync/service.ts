@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import { acquireCatalogLock, CATALOG_LOCK_LEASE_MS, releaseCatalogLock, renewCatalogLock } from "./lock.js";
 import { negoPlusClient } from "./negoplus.js";
+import { revalidateApprovedPromotions } from "../promotions/service.js";
 
 let syncing = false;
 
@@ -93,7 +94,13 @@ export async function synchronizeCatalog(dependencies?: { prisma?: typeof prisma
         await tx.optionGroup.deleteMany({ where: { productId: product.id, externalId: { notIn: groupIds } } });
       }
     });
-    return database.syncRun.update({ where: { id: run.id }, data: { status: SyncStatus.SUCCESS, completedAt: new Date(), categoryCount: categories.length, productCount: products.length } });
+    try {
+      await revalidateApprovedPromotions(database);
+      return database.syncRun.update({ where: { id: run.id }, data: { status: SyncStatus.SUCCESS, completedAt: new Date(), categoryCount: categories.length, productCount: products.length } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message.slice(0, 500) : "Error desconocido";
+      return database.syncRun.update({ where: { id: run.id }, data: { status: SyncStatus.PARTIAL, completedAt: new Date(), categoryCount: categories.length, productCount: products.length, errorCode: "PROMOTION_REVALIDATION_FAILED", errorMessage: message } });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 500) : "Error desconocido";
     if (runId) await database.syncRun.update({ where: { id: runId }, data: { status: SyncStatus.FAILED, completedAt: new Date(), errorCode: "CATALOG_SYNC_FAILED", errorMessage: message } });

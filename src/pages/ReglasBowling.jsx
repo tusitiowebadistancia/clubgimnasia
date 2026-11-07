@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function ReglasBowling() {
   return (
@@ -45,6 +46,8 @@ export default function ReglasBowling() {
               Te lo explicamos 👇
             </p>
           </div>
+
+          <CampaignVideoStrip placement="BOWLING_RULES_AFTER_INTRO" />
 
           <div className="w-full max-w-4xl rounded-3xl border border-white/10 bg-zinc-950/70 p-6 shadow-2xl shadow-black/40 md:p-10">
             <div className="space-y-8 text-center">

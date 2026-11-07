@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 
 export class HttpError extends Error {
@@ -8,6 +9,7 @@ export class HttpError extends Error {
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (error instanceof ZodError) return res.status(400).json({ error: "Datos inválidos", details: error.flatten() });
   if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return res.status(409).json({ error: "Ya existe un registro con ese valor único" });
   console.error("Unhandled request error", error instanceof Error ? error.message : "unknown");
   return res.status(500).json({ error: "Error interno" });
 }

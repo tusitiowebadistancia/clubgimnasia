@@ -34,10 +34,10 @@ Mensaje: ${form.mensaje}
   };
 
   return (
-    <section className="bg-[#111] px-4 py-20 text-white">
+    <section className="contact-form-section bg-[#111] px-4 py-20 text-white">
       <div className="mx-auto max-w-4xl">
         <Reveal>
-          <h2 className="mb-10 text-center text-3xl md:text-4xl">
+          <h2 className="contact-form-title mb-10 text-center text-3xl md:text-4xl">
   Enviá tu consulta
 </h2>
         </Reveal>
@@ -45,7 +45,7 @@ Mensaje: ${form.mensaje}
         <Reveal>
           <form
             onSubmit={handleSubmit}
-            className="grid gap-5 rounded-2xl border border-white/10 bg-zinc-900 p-8"
+            className="contact-form grid gap-5 rounded-2xl border border-white/10 bg-zinc-900 p-8"
           >
             <input
               type="text"
@@ -53,7 +53,7 @@ Mensaje: ${form.mensaje}
               placeholder="Tu nombre"
               value={form.nombre}
               onChange={handleChange}
-              className="rounded-xl bg-black px-4 py-3 text-white outline-none"
+              className="contact-form-field rounded-xl bg-black px-4 py-3 text-white outline-none"
               required
             />
 
@@ -61,7 +61,7 @@ Mensaje: ${form.mensaje}
               name="servicio"
               value={form.servicio}
               onChange={handleChange}
-              className="rounded-xl bg-black px-4 py-3 text-white outline-none"
+              className="contact-form-field rounded-xl bg-black px-4 py-3 text-white outline-none"
               required
             >
               <option value="">Seleccioná un servicio</option>
@@ -76,7 +76,7 @@ Mensaje: ${form.mensaje}
               name="fecha"
               value={form.fecha}
               onChange={handleChange}
-              className="rounded-xl bg-black px-4 py-3 text-white outline-none"
+              className="contact-form-field rounded-xl bg-black px-4 py-3 text-white outline-none"
             />
 
             <input
@@ -85,7 +85,7 @@ Mensaje: ${form.mensaje}
               placeholder="Cantidad de personas"
               value={form.personas}
               onChange={handleChange}
-              className="rounded-xl bg-black px-4 py-3 text-white outline-none"
+              className="contact-form-field rounded-xl bg-black px-4 py-3 text-white outline-none"
             />
 
             <textarea
@@ -94,12 +94,12 @@ Mensaje: ${form.mensaje}
               value={form.mensaje}
               onChange={handleChange}
               rows="5"
-              className="rounded-xl bg-black px-4 py-3 text-white outline-none"
+              className="contact-form-field rounded-xl bg-black px-4 py-3 text-white outline-none"
             />
 
             <button
               type="submit"
-              className="rounded-xl bg-white px-6 py-3 font-semibold text-black transition hover:scale-[1.02]"
+              className="contact-form-submit rounded-xl bg-white px-6 py-3 font-semibold text-black transition hover:scale-[1.02]"
             >
               Enviar por WhatsApp
             </button>

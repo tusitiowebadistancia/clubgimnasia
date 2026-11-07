@@ -7,6 +7,7 @@ import BowlingGallery from "../components/sections/bowling/BowlingGallery";
 import BowlingFaq from "../components/sections/bowling/BowlingFaq";
 import BowlingCTA from "../components/sections/bowling/BowlingCTA";
 import SEO from "../components/common/SEO";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function Bowling() {
   return (
@@ -19,8 +20,10 @@ export default function Bowling() {
   />
       <BowlingHero />
       <BowlingIncludes />
+      <CampaignVideoStrip placement="BOWLING_AFTER_INCLUDES" />
       <BowlingHowItWorks />
       <BowlingPromos />
+      <CampaignVideoStrip placement="BOWLING_AFTER_PROMOS" />
       <BowlingGallery />
       <BowlingFaq />
       <BowlingCTA />

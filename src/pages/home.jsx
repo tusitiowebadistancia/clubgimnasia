@@ -6,12 +6,14 @@ import Hero from "../components/sections/Home/Hero";
 import ServicesPreview from "../components/sections/Home/ServicesPreview";
 import ExperienceSection from "../components/sections/Home/ExperienceSection";
 import FeaturedPromos from "../components/sections/Home/FeaturedPromos";
+import HomePromotions from "../components/sections/Home/HomePromotions";
 import InteractiveGallery from "../components/sections/Home/InteractiveGallery";
 import WhyChooseUs from "../components/sections/Home/WhyChooseUs";
 import Testimonials from "../components/sections/Home/Testimonials";
 import ScrollPinTransition from "../components/common/ScrollPinTransition";
 import CTASection from "../components/sections/Home/CTASection";
 import MobileVideoBanner from "../components/sections/Home/MobileVideoBanner";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 //import MobileScrollGallery from "../components/sections/Home/MobileScrollGallery";
 
 export default function Home() {
@@ -27,8 +29,11 @@ export default function Home() {
       <Hero />
       <MobileVideoBanner />
       <ServicesPreview />
-      <ExperienceSection />
-      <FeaturedPromos />
+       <CampaignVideoStrip placement="HOME_AFTER_SERVICES" />
+       <ExperienceSection />
+       <HomePromotions />
+       <FeaturedPromos />
+      <CampaignVideoStrip placement="HOME_AFTER_PROMOS" />
       <InteractiveGallery />
       <WhyChooseUs />
       <Testimonials />

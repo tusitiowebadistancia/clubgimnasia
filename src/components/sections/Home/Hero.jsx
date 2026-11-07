@@ -1,20 +1,22 @@
 import Reveal from "../../common/Reveal";
 import NeonClubLogo from "../../common/NeonClubLogo";
 import PrimaryButton from "../../common/PrimaryButton";
+import AnimatedPizzaCircle from "../../common/AnimatedPizzaCircle";
 
 import heroImg from "../../../assets/images/hero.jpg";
 
 export default function Hero() {
   return (
-    <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden bg-black text-white">
+    <section className="home-hero relative flex min-h-[90vh] items-center justify-center overflow-hidden bg-black text-white">
       <div
         className="absolute inset-0 bg-cover bg-center opacity-40"
         style={{ backgroundImage: `url(${heroImg})` }}
       />
 
-      <div className="absolute inset-0 bg-black/60" />
+       <div className="absolute inset-0 bg-black/60" />
+       <AnimatedPizzaCircle variant="home" />
 
-      <Reveal className="relative z-10 px-4 text-center">
+       <Reveal className="relative z-10 px-4 text-center">
         <NeonClubLogo />
 
         <p className="mb-8 text-lg text-zinc-300 md:text-xl">

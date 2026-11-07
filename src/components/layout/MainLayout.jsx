@@ -12,7 +12,7 @@ export default function MainLayout({ children }) {
       <div className="relative z-10">
         <Header />
 
-        <div className="h-[80px]" />
+        <div className="h-[72px]" />
 
         <Breadcrumbs />
 

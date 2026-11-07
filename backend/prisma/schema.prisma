@@ -19,11 +19,62 @@ enum TableArea {
   BAR
 }
 
+enum ThemeMode {
+  AUTOMATIC
+  DARK
+  LIGHT
+}
+enum PromotionStatus {
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+enum PromotionSystemEventType {
+  PRICE_CHANGED
+  PRODUCT_INACTIVE
+  INVALID_OFFICIAL_PRICE
+  HISTORICAL_REFERENCE_EXPIRED
+  PROMOTION_EXPIRED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
 enum AnalyticsEventType {
   PAGE_VIEW
   MENU_VIEW
   PRODUCT_VIEW
   WHATSAPP_CART
+}
+
+enum CampaignType {
+  NONE
+  YEAR_ROUND
+  CHRISTMAS
+  NEW_YEAR
+  SUMMER
+}
+
+enum CampaignPlacement {
+  HOME_AFTER_SERVICES
+  HOME_AFTER_PROMOS
+  BOWLING_AFTER_INCLUDES
+  BOWLING_AFTER_PROMOS
+  POOL_AFTER_ENVIRONMENT
+  POOL_AFTER_TOURNAMENTS
+  EVENTS_AFTER_INCLUDES
+  EVENTS_AFTER_PLANS
+  CONTACT_AFTER_INFO
+  CONTACT_AFTER_HOURS
+  MENU_AFTER_INTRO
+  MENU_QR_AFTER_GENERATOR
+  BOWLING_RULES_AFTER_INTRO
 }
 
 model Admin {
@@ -35,6 +86,7 @@ model Admin {
   updatedAt    DateTime        @updatedAt
   sessions     AdminSession[]
   auditLogs    AdminAuditLog[]
+  promotions   Promotion[]
 }
 
 model AdminSession {
@@ -56,6 +108,7 @@ model AppConfig {
   contactPhone           String?
   showObservedDiscounts  Boolean  @default(false)
   observedDiscountMaxAgeHours Int @default(72)
+  themeMode              ThemeMode @default(AUTOMATIC)
   updatedAt              DateTime @updatedAt
 }
 
@@ -89,8 +142,76 @@ model Product {
   optionGroups    OptionGroup[]
   priceHistory    PriceHistory[]
   carts           PreparedCart[]
+  promotions      Promotion[]
+  orderItems      OrderItem[]
   @@unique([externalId, branchId])
   @@index([categoryId, active])
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  orderNumber    String      @unique
+  idempotencyKey String?     @unique
+  idempotencyFingerprint String?
+  branchId       Int
+  venueTableId   String?
+  venueCode      String?
+  venueLabel     String?
+  status         OrderStatus @default(PENDING)
+  currency       String      @default("ARS") @db.Char(3)
+  subtotal       Decimal     @db.Decimal(12, 2)
+  total          Decimal     @db.Decimal(12, 2)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  confirmedAt    DateTime?
+  cancelledAt    DateTime?
+  venueTable     VenueTable? @relation(fields: [venueTableId], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+  @@index([branchId, createdAt])
+  @@index([status, createdAt])
+  @@index([venueTableId, createdAt])
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   String
+  productName String
+  unitPrice   Decimal @db.Decimal(12, 2)
+  quantity    Int
+  lineTotal   Decimal @db.Decimal(12, 2)
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Promotion {
+  id String @id @default(uuid())
+  productId String
+  previousPrice Decimal @db.Decimal(12,2)
+  currentPrice Decimal @db.Decimal(12,2)
+  previousObservedAt DateTime
+  approvedAt DateTime?
+  approvedById String?
+  status PromotionStatus @default(REJECTED)
+  expiresAt DateTime?
+  placements String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product Product @relation(fields:[productId], references:[id], onDelete:Cascade)
+  approvedBy Admin? @relation(fields:[approvedById], references:[id], onDelete:SetNull)
+  systemEvents PromotionSystemEvent[]
+  @@index([productId,status])
+}
+model PromotionSystemEvent {
+  id String @id @default(uuid())
+  promotionId String
+  eventType PromotionSystemEventType
+  reason String
+  createdAt DateTime @default(now())
+  promotion Promotion @relation(fields:[promotionId], references:[id], onDelete:Restrict)
+  @@index([promotionId, createdAt])
 }
 
 model OptionGroup {
@@ -131,6 +252,7 @@ model PriceHistory {
 model OfferConfig {
   id                     String   @id @default("default")
   enabled                Boolean  @default(false)
+  showHomePromotions     Boolean  @default(false)
   maxObservationAgeHours Int      @default(72)
   updatedAt              DateTime @updatedAt
 }
@@ -147,6 +269,37 @@ model Advertisement {
   updatedAt DateTime @updatedAt
 }
 
+model CampaignConfig {
+  id             String       @id @default("default")
+  activeCampaign CampaignType @default(NONE)
+  updatedAt      DateTime     @updatedAt
+}
+
+model CampaignVideo {
+  id          String            @id @default(uuid())
+  campaign    CampaignType
+  name        String
+  desktopUrl  String
+  mobileUrl   String
+  posterUrl   String?
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  placements  CampaignVideoPlacement[]
+  @@index([campaign, active])
+}
+
+model CampaignVideoPlacement {
+  id        String            @id @default(uuid())
+  videoId   String
+  placement CampaignPlacement
+  active    Boolean           @default(true)
+  sortOrder Int               @default(0)
+  video     CampaignVideo     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  @@unique([videoId, placement])
+  @@index([placement, active, sortOrder])
+}
+
 model BusinessHours {
   id        String   @id @default(uuid())
   dayOfWeek Int
@@ -157,12 +310,15 @@ model BusinessHours {
 }
 
 model VenueTable {
-  id        String    @id @default(uuid())
-  code      String    @unique
+  id        String        @id @default(uuid())
+  code      String        @unique
   label     String
   area      TableArea
-  active    Boolean   @default(true)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   qr        QrIdentifier?
+  orders    Order[]
 }
 
 model QrIdentifier {

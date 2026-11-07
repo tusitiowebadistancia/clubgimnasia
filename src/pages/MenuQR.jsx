@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { buildMenuUrlForTable, TABLE_OPTIONS } from "../data/menuData";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function MenuQR() {
   const [selectedTable, setSelectedTable] = useState("1");
@@ -88,6 +89,7 @@ export default function MenuQR() {
   };
 
   return (
+    <>
     <section className="relative overflow-hidden rounded-[32px] border border-cyan-400/15 bg-gradient-to-br from-[#06131b] via-[#071a24] to-[#0a1020] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.35)] md:p-7">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.14),transparent_34%)]" />
 
@@ -174,6 +176,8 @@ export default function MenuQR() {
         </div>
       </div>
     </section>
+    <CampaignVideoStrip placement="MENU_QR_AFTER_GENERATOR" />
+    </>
   );
 }
 

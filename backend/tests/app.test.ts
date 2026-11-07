@@ -15,8 +15,29 @@ describe("API security boundaries", () => {
     expect(response.status).toBe(401);
   });
 
+  it("rejects the internal catalog sync endpoint without the server token", async () => {
+    const response = await request(app).post("/api/internal/sync");
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects an invalid internal catalog sync token", async () => {
+    const response = await request(app).post("/api/internal/sync").set("Authorization", "Bearer invalid-token");
+    expect(response.status).toBe(401);
+  });
+
   it("sets no access-control origin for untrusted origins", async () => {
     const response = await request(app).get("/health").set("Origin", "https://untrusted.example");
     expect(response.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("limits only credential submissions and exposes the actual retry time", async () => {
+    for (let index = 0; index < 5; index += 1) await request(app).get("/api/admin/auth/session");
+    const credentials = { email: "limit@example.test", password: "valid-test-password" };
+    await expect(request(app).post("/api/admin/auth/login").send(credentials)).resolves.toMatchObject({ status: 401 });
+    for (let index = 0; index < 4; index += 1) await request(app).post("/api/admin/auth/login").send(credentials);
+    const response = await request(app).post("/api/admin/auth/login").send(credentials);
+    expect(response.status).toBe(429);
+    expect(Number(response.headers["retry-after"])).toBeGreaterThan(0);
+    expect(response.body).toMatchObject({ retryAfterSeconds: Number(response.headers["retry-after"]) });
   });
 });

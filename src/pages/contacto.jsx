@@ -7,6 +7,7 @@ import ContactoWhatsApp from "../components/sections/contacto/ContactoWhatsApp";
 import ContactoForm from "../components/sections/contacto/ContactoForm";
 import ContactoFaq from "../components/sections/contacto/ContactoFaq";
 import SEO from "../components/common/SEO";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function Contacto() {
   return (
@@ -19,8 +20,10 @@ export default function Contacto() {
 />
       <ContactoHero />
       <ContactoInfo />
+      <CampaignVideoStrip placement="CONTACT_AFTER_INFO" />
       <ContactoMap />
       <ContactoHorarios />
+      <CampaignVideoStrip placement="CONTACT_AFTER_HOURS" />
       <ContactoWhatsApp />
       <ContactoForm />
       <ContactoFaq />

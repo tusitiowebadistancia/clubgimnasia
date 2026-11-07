@@ -8,6 +8,7 @@ import PoolGallery from "../components/sections/pool/PoolGallery";
 import PoolFaq from "../components/sections/pool/PoolFaq";
 import PoolCTA from "../components/sections/pool/PoolCTA";
 import SEO from "../components/common/SEO";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function Pool() {
   return (
@@ -20,9 +21,11 @@ export default function Pool() {
 />
       <PoolHero />
       <PoolEnvironment />
+      <CampaignVideoStrip placement="POOL_AFTER_ENVIRONMENT" />
       <PoolHowItWorks />
       {/*<PoolPromos />*/}
       <PoolTournaments />
+      <CampaignVideoStrip placement="POOL_AFTER_TOURNAMENTS" />
       <PoolGallery />
       <PoolFaq />
       <PoolCTA />

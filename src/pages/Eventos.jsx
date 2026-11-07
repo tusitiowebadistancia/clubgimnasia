@@ -8,6 +8,7 @@ import EventosBenefits from "../components/sections/eventos/EventosBenefits";
 import EventosFaq from "../components/sections/eventos/EventosFaq";
 import EventosCTA from "../components/sections/eventos/EventosCTA";
 import SEO from "../components/common/SEO";
+import CampaignVideoStrip from "../components/common/CampaignVideoStrip";
 
 export default function Eventos() {
   return (
@@ -21,7 +22,9 @@ export default function Eventos() {
       <EventosHero />
       <EventosTypes />
       <EventosIncludes />
+      <CampaignVideoStrip placement="EVENTS_AFTER_INCLUDES" />
       <EventosPlans />
+      <CampaignVideoStrip placement="EVENTS_AFTER_PLANS" />
       <EventosGallery />
       <EventosBenefits />
       <EventosFaq />

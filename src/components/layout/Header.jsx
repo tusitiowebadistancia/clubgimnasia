@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
+import { adminRequest } from "../../admin/api";
 
 const navLinks = [
   { to: "/", label: "Inicio" },
@@ -37,6 +38,7 @@ export default function Header() {
   const [balls, setBalls] = useState([]);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
+  const [hasAdminSession, setHasAdminSession] = useState(false);
 
   const brandRef = useRef(null);
   const iconRef = useRef(null);
@@ -50,6 +52,18 @@ export default function Header() {
       if (resetTimerRef.current) {
         window.clearTimeout(resetTimerRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    adminRequest("/admin/auth/session")
+      .then(() => active && setHasAdminSession(true))
+      .catch(() => active && setHasAdminSession(false));
+
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -168,6 +182,9 @@ export default function Header() {
                 </Link>
               );
             })}
+            <Link to={hasAdminSession ? "/admin" : "/admin/login"} className="header-admin-link">
+              {hasAdminSession ? "Activo" : "Login"}
+            </Link>
           </nav>
 
           <button
@@ -188,7 +205,7 @@ export default function Header() {
 
       {/* menú lateral mobile debajo del header */}
       <div
-        className={`fixed left-0 top-[0px] z-[80] h-[calc(100%-73px)] w-[82%] max-w-xs overflow-y-auto border-r border-white/10 bg-black text-white transition-transform duration-300 md:hidden ${
+        className={`header-mobile-nav fixed left-0 top-[0px] z-[80] h-[calc(100%-73px)] w-[82%] max-w-xs overflow-y-auto border-r border-white/10 bg-black text-white transition-transform duration-300 md:hidden ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -220,8 +237,21 @@ export default function Header() {
               >
                 {item.label}
               </Link>
-            );
-          })}
+              );
+            })}
+          <div className="mt-3 border-t border-cyan-300/20 pt-3">
+            <Link
+              to={hasAdminSession ? "/admin" : "/admin/login"}
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-lg font-medium text-cyan-100 transition hover:bg-cyan-300/20"
+            >
+              Acceso administrativo
+              <span className="flex items-center gap-2 text-sm text-cyan-300">
+                <LogIn size={17} />
+                {hasAdminSession ? "Activo" : "Login"}
+              </span>
+            </Link>
+          </div>
         </nav>
       </div>
 

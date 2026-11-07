@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: bowling-club-gimnasia-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run prisma:generate && npm run backend:build
+    startCommand: npm run backend:start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: SYNC_LOCAL_SCHEDULER_ENABLED
+        value: "false"

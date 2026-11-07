@@ -1,0 +1,8 @@
+name = "bowling-club-catalog-sync"
+main = "src/index.ts"
+compatibility_date = "2026-11-02"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+# Set SYNC_ENDPOINT_URL as a plain Worker variable and INTERNAL_SYNC_TOKEN with `wrangler secret put`.

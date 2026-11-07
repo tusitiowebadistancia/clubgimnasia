@@ -21,6 +21,11 @@ import AdminLogin from "../admin/AdminLogin";
 import AdminLayout from "../admin/AdminLayout";
 import AdminDashboard from "../admin/AdminDashboard";
 import AdminProducts from "../admin/AdminProducts";
+import AdminAdvertising from "../admin/AdminAdvertising";
+import AdminVenues from "../admin/AdminVenues";
+import AdminConfiguration from "../admin/AdminConfiguration";
+import AdminPromotions from "../admin/AdminPromotions";
+import AdminOrders from "../admin/AdminOrders";
 
 import MainLayout from "../components/layout/MainLayout";
 
@@ -43,6 +48,11 @@ export default function AppRouter() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="productos" element={<AdminProducts />} />
+          <Route path="publicidad" element={<AdminAdvertising />} />
+           <Route path="mesas" element={<AdminVenues />} />
+            <Route path="configuracion" element={<AdminConfiguration />} />
+             <Route path="promociones" element={<AdminPromotions />} />
+             <Route path="pedidos" element={<AdminOrders />} />
         </Route>
 
         <Route
