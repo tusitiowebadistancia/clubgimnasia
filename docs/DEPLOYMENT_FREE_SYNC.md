@@ -19,6 +19,29 @@ No usar valores con prefijo `VITE_` para secretos. Las credenciales de NegoPlus 
 
 En el build del frontend de Hostinger configurar `VITE_API_BASE_URL=https://<render-service>/api`. Es una URL pública, no un secreto; `APP_ORIGIN` en Render debe coincidir exactamente con el origen de Hostinger para CORS.
 
+## Login administrativo entre subdominios
+
+Configurar `APP_ORIGIN=https://bowling.federicofigini.com` y `VITE_API_BASE_URL=https://api.bowling.federicofigini.com/api`. Las cookies de sesión y CSRF son `HttpOnly`, `Secure` en producción, `SameSite=Strict`, `Path=/` y host-only: no se define `Domain`, por lo que quedan limitadas a `api.bowling.federicofigini.com`.
+
+Los dos subdominios pertenecen al mismo sitio registrable y HTTPS, por lo que `SameSite=Strict` permite las solicitudes con credenciales del frontend. El cliente obtiene el token CSRF explícitamente desde las respuestas de login y sesión, lo conserva solo en memoria y lo envía en `x-csrf-token`; no intenta leer cookies del host de la API desde `document.cookie`.
+
+## Cuenta administrativa inicial
+
+Después de aplicar migraciones a Neon, crear la primera cuenta desde PowerShell local con una URL directa privada de Neon. Render Free no ofrece Shell.
+
+```powershell
+$secureUrl = Read-Host "Neon DATABASE_URL" -AsSecureString
+$env:DATABASE_URL = [System.Net.NetworkCredential]::new("", $secureUrl).Password
+$env:ADMIN_EMAIL = Read-Host "ADMIN_EMAIL"
+$securePassword = Read-Host "ADMIN_PASSWORD" -AsSecureString
+$env:ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $securePassword).Password
+npm run admin:bootstrap
+Remove-Item Env:DATABASE_URL, Env:ADMIN_EMAIL, Env:ADMIN_PASSWORD
+Remove-Variable secureUrl, securePassword
+```
+
+No imprimir, guardar ni versionar las variables anteriores. El bootstrap falla si ya existe un administrador.
+
 ## Worker de Cloudflare
 
 1. Crear un Worker desde `cloudflare-sync-worker/` con Wrangler, sin desplegar todavía.

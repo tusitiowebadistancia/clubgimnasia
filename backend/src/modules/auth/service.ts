@@ -6,6 +6,8 @@ import { prisma } from "../../lib/prisma.js";
 
 const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
 export const sessionCookieOptions = { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict" as const, path: "/", maxAge: env.SESSION_TTL_HOURS * 3600_000 };
+export const csrfCookieOptions = { ...sessionCookieOptions, httpOnly: true };
+export const createCsrfToken = () => crypto.randomBytes(32).toString("base64url");
 
 export async function createSession(email: string, password: string) {
   const admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });

@@ -126,10 +126,26 @@ integration("PostgreSQL integration", () => {
     const login = await agent.post("/api/admin/auth/login").send({ email: "admin.api@example.test", password });
     const csrfToken = login.body.csrfToken;
 
-    await expect(agent.get("/api/admin/auth/session")).resolves.toMatchObject({ status: 200, body: { admin: { email: "admin.api@example.test" } } });
+    expect(login.headers["set-cookie"]).toEqual(expect.arrayContaining([expect.stringMatching(/bcg_admin_session=.*HttpOnly.*SameSite=Strict/), expect.stringMatching(/bcg_csrf=.*HttpOnly.*SameSite=Strict/)]));
+    await expect(agent.get("/api/admin/auth/session")).resolves.toMatchObject({ status: 200, body: { admin: { email: "admin.api@example.test" }, csrfToken } });
     await expect(agent.get("/api/admin/summary")).resolves.toMatchObject({ status: 200 });
     await expect(agent.put("/api/admin/config").send({ publicName: "Club" })).resolves.toMatchObject({ status: 403 });
-    await expect(agent.put("/api/admin/config").set("Origin", "http://localhost:5173").set("x-csrf-token", csrfToken).send({ publicName: "Club" })).resolves.toMatchObject({ status: 200, body: { publicName: "Club" } });
+    await expect(agent.put("/api/admin/config").set("Origin", "https://bowling.federicofigini.com").set("x-csrf-token", csrfToken).send({ publicName: "Club" })).resolves.toMatchObject({ status: 200, body: { publicName: "Club" } });
+    await agent.put("/api/admin/config").set("Origin", "https://other.federicofigini.com").set("x-csrf-token", csrfToken).send({ publicName: "No" }).expect(403);
+  });
+
+  it("logs out with the explicit CSRF token and rejects an expired session", async () => {
+    const password = "integration-test-password";
+    const admin = await prisma.admin.create({ data: { email: "admin.logout@example.test", passwordHash: await argon2.hash(password) } });
+    const agent = request.agent(createApp());
+    const login = await agent.post("/api/admin/auth/login").set("Origin", "https://bowling.federicofigini.com").send({ email: admin.email, password }).expect(200);
+
+    await agent.post("/api/admin/auth/logout").set("Origin", "https://bowling.federicofigini.com").set("x-csrf-token", login.body.csrfToken).expect(204);
+    await agent.get("/api/admin/auth/session").expect(401);
+
+    const { token } = await createSession(admin.email, password);
+    await prisma.adminSession.updateMany({ where: { adminId: admin.id }, data: { expiresAt: new Date(Date.now() - 1) } });
+    await request(createApp()).get("/api/admin/auth/session").set("Cookie", `bcg_admin_session=${token}`).expect(401);
   });
 
   it("persists hours and theme mode through protected configuration endpoints", async () => {
@@ -137,7 +153,7 @@ integration("PostgreSQL integration", () => {
     await prisma.admin.create({ data: { email: "admin.hours@example.test", passwordHash: await argon2.hash(password) } });
     const agent = request.agent(createApp());
     const login = await agent.post("/api/admin/auth/login").send({ email: "admin.hours@example.test", password });
-    const headers = { Origin: "http://localhost:5173", "x-csrf-token": login.body.csrfToken };
+    const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": login.body.csrfToken };
     const hours = Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, opensAt: "19:30", closesAt: "04:30", closed: dayOfWeek === 0 }));
 
     await agent.put("/api/admin/hours").set(headers).send(hours).expect(204);
@@ -158,7 +174,7 @@ integration("PostgreSQL integration", () => {
     const agent = request.agent(app);
     const login = await agent.post("/api/admin/auth/login").send({ email: "admin.campaign@example.test", password });
     const csrfToken = login.body.csrfToken;
-    const origin = "http://localhost:5173";
+    const origin = "https://bowling.federicofigini.com";
     const video = { campaign: "YEAR_ROUND", name: "Lanzamiento", desktopUrl: "https://media.example.test/desktop.mp4", mobileUrl: "https://media.example.test/mobile.mp4", posterUrl: "https://media.example.test/poster.webp", active: true, placements: [{ placement: "HOME_AFTER_SERVICES", sortOrder: 1 }, { placement: "BOWLING_AFTER_PROMOS", sortOrder: 2 }] };
 
     await expect(agent.put("/api/admin/campaigns/active").send({ activeCampaign: "YEAR_ROUND" })).resolves.toMatchObject({ status: 403 });
@@ -187,7 +203,7 @@ integration("PostgreSQL integration", () => {
     const agent = request.agent(app);
     const login = await agent.post("/api/admin/auth/login").send({ email: "admin.venue@example.test", password });
     const csrfToken = login.body.csrfToken;
-    const headers = { Origin: "http://localhost:5173", "x-csrf-token": csrfToken };
+    const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": csrfToken };
     const venue = { code: "M01", label: "Mesa 01", area: "TABLE", active: true };
 
     const created = await agent.post("/api/admin/venues").set(headers).send(venue);
@@ -344,7 +360,7 @@ integration("PostgreSQL integration", () => {
     const product = await prisma.product.create({ data: { externalId: 2601, branchId: 5, name: "Agua", price: 1200 } });
     const create = (key: string) => createOrder({ idempotencyKey: key, branchId: 5, venue: { qr: "order-status-token-0008" }, items: [{ productId: product.id, quantity: 2 }] });
     const order = await create("00000000-0000-4000-8000-000000000019"); const concurrent = await create("00000000-0000-4000-8000-000000000020");
-    const { token } = await createSession(admin.email, "integration-test-password"); const app = createApp(); const headers = { Origin: "http://localhost:5173", "x-csrf-token": "order-status-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=order-status-csrf` };
+    const { token } = await createSession(admin.email, "integration-test-password"); const app = createApp(); const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "order-status-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=order-status-csrf` };
     const path = (id: string) => `/api/admin/orders/${id}/status`;
 
     await request(app).patch(path(order.id)).send({ status: "CONFIRMED" }).expect(401);
@@ -392,7 +408,7 @@ integration("PostgreSQL integration", () => {
     const product = await prisma.product.create({ data: { externalId: 990, branchId: 5, name: "Concurrente", price: 80 } });
     await prisma.priceHistory.create({ data: { productId: product.id, price: 80, previousPrice: 100, isPriceDecrease: true, reductionPercent: 20 } });
     const app = createApp(); const { token } = await createSession(admin.email, password);
-    const headers = { Origin: "http://localhost:5173", "x-csrf-token": "concurrency-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=concurrency-csrf` };
+    const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "concurrency-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=concurrency-csrf` };
     const approve = (placements: string[]) => request(app).post("/api/admin/promotions/approve").set(headers).send({ productId: product.id, placements });
     const same = await Promise.all([approve(["HOME"]), approve(["HOME"])]);
     expect(same.map((response) => response.status).sort()).toEqual([201, 409]);
@@ -410,7 +426,7 @@ integration("PostgreSQL integration", () => {
     const product = await prisma.product.create({ data: { externalId: 999, branchId: 5, name: "Suspendible", price: 80 } });
     const promotion = await prisma.promotion.create({ data: { productId: product.id, previousPrice: 100, currentPrice: 80, previousObservedAt: new Date(), approvedAt: new Date(), approvedById: admin.id, status: "APPROVED", placements: ["HOME"] } });
     const { token } = await createSession(admin.email, password);
-    const app = createApp(); const headers = { Origin: "http://localhost:5173", "x-csrf-token": "suspend-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=suspend-csrf` };
+    const app = createApp(); const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "suspend-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=suspend-csrf` };
     await request(app).post(`/api/admin/promotions/${promotion.id}/suspend`).set(headers).expect(200);
     expect(await prisma.promotion.findUnique({ where: { id: promotion.id } })).toMatchObject({ status: "SUSPENDED" });
     expect(await prisma.adminAuditLog.count({ where: { entityId: promotion.id, action: "SUSPENDED" } })).toBe(1);
@@ -423,7 +439,7 @@ integration("PostgreSQL integration", () => {
     const admin = await prisma.admin.create({ data: { email: "admin.reject@example.test", passwordHash: await argon2.hash(password) } });
     const product = await prisma.product.create({ data: { externalId: 1000, branchId: 5, name: "Rechazable", price: 80 } });
     const promotion = await prisma.promotion.create({ data: { productId: product.id, previousPrice: 100, currentPrice: 80, previousObservedAt: new Date(), approvedAt: new Date(), approvedById: admin.id, status: "APPROVED", placements: ["HOME"] } });
-    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "http://localhost:5173", "x-csrf-token": "reject-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=reject-csrf` };
+    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "reject-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=reject-csrf` };
     await request(app).post(`/api/admin/promotions/${promotion.id}/reject`).set(headers).expect(200);
     expect(await prisma.promotion.findUnique({ where: { id: promotion.id } })).toMatchObject({ status: "REJECTED" });
     expect(await prisma.adminAuditLog.count({ where: { entityId: promotion.id, action: "REJECTED" } })).toBe(1);
@@ -435,7 +451,7 @@ integration("PostgreSQL integration", () => {
 
   it("validates promotion expiry dates without writing invalid approvals", async () => {
     const password = "integration-test-password"; const admin = await prisma.admin.create({ data: { email: "admin.expiry@example.test", passwordHash: await argon2.hash(password) } });
-    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "http://localhost:5173", "x-csrf-token": "expiry-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=expiry-csrf` };
+    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "expiry-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=expiry-csrf` };
     async function createCandidate(externalId: number) { const product = await prisma.product.create({ data: { externalId, branchId: 5, name: `Vence ${externalId}`, price: 80 } }); await prisma.priceHistory.create({ data: { productId: product.id, price: 80, previousPrice: 100, isPriceDecrease: true } }); return product; }
     const future = await createCandidate(1101); const futureAt = new Date(Date.now() + 86_400_000).toISOString();
     await request(app).post("/api/admin/promotions/approve").set(headers).send({ productId: future.id, placements: ["HOME"], expiresAt: futureAt }).expect(201);
@@ -449,7 +465,7 @@ integration("PostgreSQL integration", () => {
     const password = "integration-test-password"; const admin = await prisma.admin.create({ data: { email: "admin.transition@example.test", passwordHash: await argon2.hash(password) } });
     const product = await prisma.product.create({ data: { externalId: 1200, branchId: 5, name: "Transición", price: 80 } });
     const promotion = await prisma.promotion.create({ data: { productId: product.id, previousPrice: 100, currentPrice: 80, previousObservedAt: new Date(), approvedAt: new Date(), approvedById: admin.id, status: "APPROVED", placements: ["HOME"] } });
-    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "http://localhost:5173", "x-csrf-token": "transition-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=transition-csrf` };
+    const { token } = await createSession(admin.email, password); const app = createApp(); const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "transition-csrf", Cookie: `bcg_admin_session=${token}; bcg_csrf=transition-csrf` };
     const [rejected, suspended] = await Promise.all([request(app).post(`/api/admin/promotions/${promotion.id}/reject`).set(headers), request(app).post(`/api/admin/promotions/${promotion.id}/suspend`).set(headers)]);
     expect([rejected.status, suspended.status].sort()).toEqual([200, 409]);
     const final = await prisma.promotion.findUniqueOrThrow({ where: { id: promotion.id } });
@@ -496,7 +512,7 @@ integration("PostgreSQL integration", () => {
     await request(app).get("/api/admin/promotions/settings").expect(401);
     await request(app).get("/api/admin/promotions/settings").set("Cookie", cookie).expect(200).expect({ showHomePromotions: false });
     await request(app).patch("/api/admin/promotions/settings").set("Cookie", cookie).send({ showHomePromotions: true }).expect(403);
-    const headers = { Origin: "http://localhost:5173", "x-csrf-token": "home-settings-csrf", Cookie: cookie };
+    const headers = { Origin: "https://bowling.federicofigini.com", "x-csrf-token": "home-settings-csrf", Cookie: cookie };
     await request(app).patch("/api/admin/promotions/settings").set(headers).send({ showHomePromotions: "true" }).expect(400);
     await request(app).patch("/api/admin/promotions/settings").set(headers).send({ showHomePromotions: true }).expect(200).expect({ showHomePromotions: true });
     expect(await prisma.offerConfig.findUniqueOrThrow({ where: { id: "default" } })).toMatchObject({ showHomePromotions: true, enabled: false, maxObservationAgeHours: 72 });

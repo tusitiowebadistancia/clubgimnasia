@@ -30,6 +30,12 @@ describe("API security boundaries", () => {
     expect(response.headers["access-control-allow-origin"]).toBeUndefined();
   });
 
+  it("allows credentialed requests from the configured frontend subdomain", async () => {
+    const response = await request(app).get("/health").set("Origin", "https://bowling.federicofigini.com");
+    expect(response.headers["access-control-allow-origin"]).toBe("https://bowling.federicofigini.com");
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
+  });
+
   it("limits only credential submissions and exposes the actual retry time", async () => {
     for (let index = 0; index < 5; index += 1) await request(app).get("/api/admin/auth/session");
     const credentials = { email: "limit@example.test", password: "valid-test-password" };

@@ -9,7 +9,8 @@ import { adminRouter, authRouter, internalRouter } from "./routes/admin.js";
 import { publicRouter } from "./routes/public.js";
 import { adminPromotionsRouter } from "./routes/admin-promotions.js";
 
-const loginRateLimiter = rateLimit({
+function createLoginRateLimiter() {
+  return rateLimit({
   windowMs: 15 * 60_000,
   limit: 5,
   standardHeaders: "draft-8",
@@ -24,7 +25,8 @@ const loginRateLimiter = rateLimit({
     res.setHeader("Retry-After", retryAfterSeconds);
     res.status(429).json({ error: `Demasiados intentos. Intentá nuevamente en ${wait}.`, retryAfterSeconds });
   },
-});
+  });
+}
 
 const orderRateLimiter = rateLimit({
   windowMs: 60_000,
@@ -44,7 +46,7 @@ export function createApp() {
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/public/orders", orderRateLimiter);
   app.use("/api/public", rateLimit({ windowMs: 60_000, limit: 120 }), publicRouter);
-  app.use("/api/admin/auth/login", loginRateLimiter);
+  app.use("/api/admin/auth/login", createLoginRateLimiter());
   app.use("/api/admin/auth", authRouter);
   app.use("/api/internal", rateLimit({ windowMs: 60_000, limit: 8 }), internalRouter);
   app.use("/api/admin/promotions", rateLimit({ windowMs: 60_000, limit: 60 }), adminPromotionsRouter);

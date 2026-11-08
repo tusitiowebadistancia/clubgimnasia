@@ -1,25 +1,30 @@
 import crypto from "node:crypto";
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { env } from "../config/env.js";
 import { HttpError } from "../lib/http.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAdmin, requireCsrf } from "../middleware/admin.js";
-import { createSession, revokeSession, sessionCookieOptions } from "../modules/auth/service.js";
+import { createCsrfToken, csrfCookieOptions, createSession, revokeSession, sessionCookieOptions } from "../modules/auth/service.js";
 import { synchronizeCatalog } from "../modules/sync/service.js";
 
 export const authRouter = Router();
 const credentials = z.object({ email: z.string().email().max(254), password: z.string().min(12).max(256) });
+function getCsrfToken(req: Request, res: Response) {
+  const csrfToken = req.cookies?.[env.CSRF_COOKIE_NAME] ?? createCsrfToken();
+  res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions);
+  return csrfToken;
+}
 authRouter.post("/login", async (req, res) => {
   const data = credentials.parse(req.body);
   const { token, admin } = await createSession(data.email, data.password);
-  const csrf = crypto.randomBytes(32).toString("base64url");
+  const csrf = createCsrfToken();
   res.cookie(env.SESSION_COOKIE_NAME, token, sessionCookieOptions);
-  res.cookie(env.CSRF_COOKIE_NAME, csrf, { ...sessionCookieOptions, httpOnly: false });
+  res.cookie(env.CSRF_COOKIE_NAME, csrf, csrfCookieOptions);
   res.json({ admin: { email: admin.email }, csrfToken: csrf });
 });
 authRouter.post("/logout", requireAdmin, requireCsrf, async (req, res) => { await revokeSession(req.cookies[env.SESSION_COOKIE_NAME]); res.clearCookie(env.SESSION_COOKIE_NAME, sessionCookieOptions); res.clearCookie(env.CSRF_COOKIE_NAME, sessionCookieOptions); res.status(204).end(); });
-authRouter.get("/session", requireAdmin, (_req, res) => res.json({ admin: { email: res.locals.admin.email } }));
+authRouter.get("/session", requireAdmin, (req, res) => res.json({ admin: { email: res.locals.admin.email }, csrfToken: getCsrfToken(req, res) }));
 
 export const adminRouter = Router();
 adminRouter.use(requireAdmin);
