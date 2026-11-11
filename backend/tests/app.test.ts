@@ -4,6 +4,10 @@ import { createApp } from "../src/app.js";
 
 describe("API security boundaries", () => {
   const app = createApp();
+  it("trusts only Render's single proxy hop for client rate limiting", () => {
+    expect(app.get("trust proxy")).toBe(1);
+  });
+
   it("exposes a health check without private data", async () => {
     const response = await request(app).get("/health");
     expect(response.status).toBe(200);
@@ -16,7 +20,7 @@ describe("API security boundaries", () => {
   });
 
   it("rejects the internal catalog sync endpoint without the server token", async () => {
-    const response = await request(app).post("/api/internal/sync");
+    const response = await request(app).post("/api/internal/sync").set("X-Forwarded-For", "198.51.100.10");
     expect(response.status).toBe(401);
   });
 

@@ -38,6 +38,8 @@ const orderRateLimiter = rateLimit({
 
 export function createApp() {
   const app = express();
+  // Render forwards public requests through exactly one trusted edge proxy.
+  app.set("trust proxy", 1);
   app.disable("x-powered-by");
   app.use(helmet());
   app.use(cors({ origin: (origin, callback) => callback(null, !origin || origin === env.APP_ORIGIN), methods: ["GET", "POST", "PUT", "PATCH"], credentials: true }));

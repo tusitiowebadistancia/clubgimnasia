@@ -93,3 +93,36 @@ describe("price change detection", () => {
     expect(getPriceChange(previous, new Prisma.Decimal("120"))).toEqual({ isPriceDecrease: false, reductionPercent: null });
   });
 });
+
+describe("catalog transaction scope", () => {
+  it("keeps each product and its price history in a bounded transaction", async () => {
+    const store = createLockStore();
+    const syncRun = { create: vi.fn(async () => ({ id: "run-1" })), update: vi.fn(async () => ({})) };
+    const tx = {
+      category: { upsert: vi.fn(async () => ({})) },
+      product: { findUnique: vi.fn(async () => null), upsert: vi.fn(async () => ({ id: "product-1" })) },
+      priceHistory: { create: vi.fn(async () => ({})) },
+      optionGroup: { upsert: vi.fn(async () => ({ id: "group-1" })), deleteMany: vi.fn(async () => ({})) },
+      productVariant: { upsert: vi.fn(async () => ({})), deleteMany: vi.fn(async () => ({})) },
+    };
+    const transaction = vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx));
+    const database = {
+      syncLock: store.client.syncLock,
+      syncRun,
+      category: { findMany: vi.fn(async () => [{ id: "category-1", externalId: 10 }]) },
+      $transaction: transaction,
+    } as any;
+    const negoPlusClient = {
+      getCategories: vi.fn(async () => [{ id: 10, nombre: "Bebidas" }]),
+      getProducts: vi.fn(async () => [{ id: 100, descripcion: "Agua", precio: 100, rubro_id: 10, grupos: [] }]),
+    };
+
+    await synchronizeCatalog({ prisma: database, negoPlusClient });
+
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(transaction).toHaveBeenNthCalledWith(1, expect.any(Function), { maxWait: 10_000, timeout: 15_000 });
+    expect(transaction).toHaveBeenNthCalledWith(2, expect.any(Function), { maxWait: 10_000, timeout: 15_000 });
+    expect(tx.product.findUnique).toHaveBeenCalledTimes(1);
+    expect(tx.priceHistory.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ productId: "product-1", syncRunId: "run-1" }) }));
+  });
+});

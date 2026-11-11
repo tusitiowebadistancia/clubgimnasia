@@ -6,6 +6,7 @@ import { negoPlusClient } from "./negoplus.js";
 import { revalidateApprovedPromotions } from "../promotions/service.js";
 
 let syncing = false;
+const catalogTransactionOptions = { maxWait: 10_000, timeout: 15_000 };
 
 export function getPriceChange(previousPrice: Prisma.Decimal | null, price: Prisma.Decimal) {
   const isPriceDecrease = Boolean(previousPrice && price.lessThan(previousPrice));
@@ -54,11 +55,13 @@ export async function synchronizeCatalog(dependencies?: { prisma?: typeof prisma
           update: { name: category.nombre, description: category.descripcion ?? null, active: true, syncedAt: new Date() },
         });
       }
-      const localCategories = await tx.category.findMany({ where: { branchId: env.NEGOPLUS_BRANCH_ID }, select: { id: true, externalId: true } });
-      const categoriesByExternalId = new Map(localCategories.map((category) => [category.externalId, category.id]));
+    }, catalogTransactionOptions);
+    const localCategories = await database.category.findMany({ where: { branchId: env.NEGOPLUS_BRANCH_ID }, select: { id: true, externalId: true } });
+    const categoriesByExternalId = new Map(localCategories.map((category) => [category.externalId, category.id]));
 
-      for (const item of products) {
-        assertLease();
+    for (const item of products) {
+      assertLease();
+      await database.$transaction(async (tx) => {
         const price = new Prisma.Decimal(item.precio);
         const existing = await tx.product.findUnique({ where: { externalId_branchId: { externalId: item.id, branchId: env.NEGOPLUS_BRANCH_ID } } });
         const product = await tx.product.upsert({
@@ -92,8 +95,8 @@ export async function synchronizeCatalog(dependencies?: { prisma?: typeof prisma
           await tx.productVariant.deleteMany({ where: { optionGroupId: savedGroup.id, externalId: { notIn: variantIds } } });
         }
         await tx.optionGroup.deleteMany({ where: { productId: product.id, externalId: { notIn: groupIds } } });
-      }
-    });
+      }, catalogTransactionOptions);
+    }
     try {
       await revalidateApprovedPromotions(database);
       return database.syncRun.update({ where: { id: run.id }, data: { status: SyncStatus.SUCCESS, completedAt: new Date(), categoryCount: categories.length, productCount: products.length } });
